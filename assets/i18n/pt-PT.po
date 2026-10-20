@@ -3712,6 +3712,67 @@ msgstr ""
 "controlador gráfico ou ative a aceleração por GPU da máquina virtual. Abrir "
 "{url} para saber mais?"
 
+#: src/ui/sidebar.rs:1097 src/ui/local_files.rs:17
+msgid "Local Files"
+msgstr "Ficheiros locais"
+
+#: src/app.rs:8953 src/app.rs:10958
+msgid "Choose this computer to play an available local file"
+msgstr "Escolhe este computador para reproduzir um ficheiro local disponível"
+
+#: src/app.rs:10545
+msgid "Local files cannot be added to Spotify playlists"
+msgstr "Não é possível adicionar ficheiros locais a playlists do Spotify"
+
+#: src/ui/settings.rs:340 src/ui/local_files.rs:26
+msgid ""
+"Index audio from a folder on this computer. Local files play on this "
+"computer only."
+msgstr ""
+"Indexa o áudio de uma pasta deste computador. Os ficheiros locais só são "
+"reproduzidos neste computador."
+
+#: src/ui/settings.rs:1000 src/ui/local_files.rs:135
+msgid "Rescan"
+msgstr "Pesquisar novamente"
+
+#. Translators: {count} is a number of indexed audio files.
+#: src/ui/local_files.rs:47
+#, rust-format
+msgid "{count} local file"
+msgid_plural "{count} local files"
+msgstr[0] "{count} ficheiro local"
+msgstr[1] "{count} ficheiros locais"
+
+#: src/ui/local_files.rs:63
+msgid "Supports MP3 and FLAC. Local files play on this computer only."
+msgstr ""
+"Suporta MP3 e FLAC. Os ficheiros locais só são reproduzidos neste computador."
+
+#: src/ui/local_files.rs:78
+msgid "Select This computer in the device picker to play local files."
+msgstr ""
+"Seleciona «Este computador» no seletor de dispositivos para reproduzires "
+"ficheiros locais."
+
+#: src/ui/local_files.rs:124
+msgid "Change folder"
+msgstr "Alterar pasta"
+
+#: src/ui/local_files.rs:164
+msgid "No local files found"
+msgstr "Não foram encontrados ficheiros locais"
+
+#: src/ui/local_files.rs:167
+msgid "Subfolders are included. Rescan after changing files."
+msgstr ""
+"As subpastas estão incluídas. Volta a pesquisar depois de alterares os "
+"ficheiros."
+
+#: src/ui/winamp/mod.rs:906
+msgid "Size: 2x, 3x, 4x"
+msgstr "Tamanho: 2x, 3x, 4x"
+
 #~ msgid ""
 #~ "Use a personal Development Mode app for a separate API quota. The shared "
 #~ "app stays active."

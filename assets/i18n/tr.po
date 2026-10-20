@@ -3708,6 +3708,64 @@ msgstr ""
 "sürücüsünü yükleyin veya sanal makine için GPU hızlandırmayı açın. Daha "
 "fazlasını okumak için {url} açılsın mı?"
 
+#: src/ui/sidebar.rs:1097 src/ui/local_files.rs:17
+msgid "Local Files"
+msgstr "Yerel dosyalar"
+
+#: src/app.rs:8953 src/app.rs:10958
+msgid "Choose this computer to play an available local file"
+msgstr "Kullanılabilir bir yerel dosyayı çalmak için bu bilgisayarı seçin"
+
+#: src/app.rs:10545
+msgid "Local files cannot be added to Spotify playlists"
+msgstr "Yerel dosyalar Spotify çalma listelerine eklenemez"
+
+#: src/ui/settings.rs:340 src/ui/local_files.rs:26
+msgid ""
+"Index audio from a folder on this computer. Local files play on this "
+"computer only."
+msgstr ""
+"Bu bilgisayardaki bir klasörde bulunan ses dosyalarını dizine ekleyin. Yerel "
+"dosyalar yalnızca bu bilgisayarda çalınır."
+
+#: src/ui/settings.rs:1000 src/ui/local_files.rs:135
+msgid "Rescan"
+msgstr "Yeniden tara"
+
+#. Translators: {count} is a number of indexed audio files.
+#: src/ui/local_files.rs:47
+#, rust-format
+msgid "{count} local file"
+msgid_plural "{count} local files"
+msgstr[0] "{count} yerel dosya"
+msgstr[1] "{count} yerel dosya"
+
+#: src/ui/local_files.rs:63
+msgid "Supports MP3 and FLAC. Local files play on this computer only."
+msgstr ""
+"MP3 ve FLAC desteklenir. Yerel dosyalar yalnızca bu bilgisayarda çalınır."
+
+#: src/ui/local_files.rs:78
+msgid "Select This computer in the device picker to play local files."
+msgstr "Yerel dosyaları çalmak için cihaz listesinden “Bu bilgisayar”ı seçin."
+
+#: src/ui/local_files.rs:124
+msgid "Change folder"
+msgstr "Klasörü değiştir"
+
+#: src/ui/local_files.rs:164
+msgid "No local files found"
+msgstr "Yerel dosya bulunamadı"
+
+#: src/ui/local_files.rs:167
+msgid "Subfolders are included. Rescan after changing files."
+msgstr ""
+"Alt klasörler de dahildir. Dosyaları değiştirdikten sonra yeniden tarayın."
+
+#: src/ui/winamp/mod.rs:906
+msgid "Size: 2x, 3x, 4x"
+msgstr "Boyut: 2x, 3x, 4x"
+
 #~ msgid ""
 #~ "Use a personal Development Mode app for a separate API quota. The shared "
 #~ "app stays active."

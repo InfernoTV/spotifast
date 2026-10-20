@@ -3581,6 +3581,59 @@ msgstr ""
 "有提供。请安装显卡驱动程序，或为虚拟机开启 GPU 加速。要打开 {url} 了解更多"
 "吗？"
 
+#: src/ui/sidebar.rs:1097 src/ui/local_files.rs:17
+msgid "Local Files"
+msgstr "本地文件"
+
+#: src/app.rs:8953 src/app.rs:10958
+msgid "Choose this computer to play an available local file"
+msgstr "请选择这台电脑以播放可用的本地文件"
+
+#: src/app.rs:10545
+msgid "Local files cannot be added to Spotify playlists"
+msgstr "本地文件无法添加到 Spotify 播放列表"
+
+#: src/ui/settings.rs:340 src/ui/local_files.rs:26
+msgid ""
+"Index audio from a folder on this computer. Local files play on this "
+"computer only."
+msgstr "为这台电脑上某个文件夹中的音频建立索引。本地文件只能在这台电脑上播放。"
+
+#: src/ui/settings.rs:1000 src/ui/local_files.rs:135
+msgid "Rescan"
+msgstr "重新扫描"
+
+#. Translators: {count} is a number of indexed audio files.
+#: src/ui/local_files.rs:47
+#, rust-format
+msgid "{count} local file"
+msgid_plural "{count} local files"
+msgstr[0] "{count} 个本地文件"
+
+#: src/ui/local_files.rs:63
+msgid "Supports MP3 and FLAC. Local files play on this computer only."
+msgstr "支持 MP3 和 FLAC。本地文件只能在这台电脑上播放。"
+
+#: src/ui/local_files.rs:78
+msgid "Select This computer in the device picker to play local files."
+msgstr "请选择设备列表中的“这台电脑”以播放本地文件。"
+
+#: src/ui/local_files.rs:124
+msgid "Change folder"
+msgstr "更改文件夹"
+
+#: src/ui/local_files.rs:164
+msgid "No local files found"
+msgstr "未找到本地文件"
+
+#: src/ui/local_files.rs:167
+msgid "Subfolders are included. Rescan after changing files."
+msgstr "包含子文件夹。更改文件后请重新扫描。"
+
+#: src/ui/winamp/mod.rs:906
+msgid "Size: 2x, 3x, 4x"
+msgstr "大小：2x、3x、4x"
+
 #~ msgid ""
 #~ "Use a personal Development Mode app for a separate API quota. The shared "
 #~ "app stays active."

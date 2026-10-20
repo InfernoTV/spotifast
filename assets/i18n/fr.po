@@ -3739,6 +3739,68 @@ msgstr ""
 "graphique ou activez l’accélération GPU de la machine virtuelle. Ouvrir "
 "{url} pour en savoir plus ?"
 
+#: src/ui/sidebar.rs:1097 src/ui/local_files.rs:17
+msgid "Local Files"
+msgstr "Fichiers locaux"
+
+#: src/app.rs:8953 src/app.rs:10958
+msgid "Choose this computer to play an available local file"
+msgstr "Choisissez cet ordinateur pour lire un fichier local disponible"
+
+#: src/app.rs:10545
+msgid "Local files cannot be added to Spotify playlists"
+msgstr "Les fichiers locaux ne peuvent pas être ajoutés aux playlists Spotify"
+
+#: src/ui/settings.rs:340 src/ui/local_files.rs:26
+msgid ""
+"Index audio from a folder on this computer. Local files play on this "
+"computer only."
+msgstr ""
+"Indexez les fichiers audio d’un dossier de cet ordinateur. Les fichiers "
+"locaux sont lus uniquement sur cet ordinateur."
+
+#: src/ui/settings.rs:1000 src/ui/local_files.rs:135
+msgid "Rescan"
+msgstr "Relancer la recherche"
+
+#. Translators: {count} is a number of indexed audio files.
+#: src/ui/local_files.rs:47
+#, rust-format
+msgid "{count} local file"
+msgid_plural "{count} local files"
+msgstr[0] "{count} fichier local"
+msgstr[1] "{count} fichiers locaux"
+
+#: src/ui/local_files.rs:63
+msgid "Supports MP3 and FLAC. Local files play on this computer only."
+msgstr ""
+"Prend en charge les fichiers MP3 et FLAC. Les fichiers locaux sont lus "
+"uniquement sur cet ordinateur."
+
+#: src/ui/local_files.rs:78
+msgid "Select This computer in the device picker to play local files."
+msgstr ""
+"Sélectionnez « Cet ordinateur » dans le sélecteur d’appareils pour lire les "
+"fichiers locaux."
+
+#: src/ui/local_files.rs:124
+msgid "Change folder"
+msgstr "Changer de dossier"
+
+#: src/ui/local_files.rs:164
+msgid "No local files found"
+msgstr "Aucun fichier local trouvé"
+
+#: src/ui/local_files.rs:167
+msgid "Subfolders are included. Rescan after changing files."
+msgstr ""
+"Les sous-dossiers sont inclus. Relancez la recherche après avoir modifié les "
+"fichiers."
+
+#: src/ui/winamp/mod.rs:906
+msgid "Size: 2x, 3x, 4x"
+msgstr "Taille : 2x, 3x, 4x"
+
 #~ msgid ""
 #~ "Use a personal Development Mode app for a separate API quota. The shared "
 #~ "app stays active."

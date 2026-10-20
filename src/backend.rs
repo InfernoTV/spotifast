@@ -736,6 +736,11 @@ pub enum Command {
     /// Find the songs in the local files folder, off the UI thread, as the
     /// player does when it starts.
     ScanLocalFiles(std::path::PathBuf),
+    /// Index local sources using the playback engine's URI lookup.
+    ScanLocalLibrary {
+        folders: Vec<std::path::PathBuf>,
+        generation: u64,
+    },
     /// Start (or restart) the Web API sign-in in the browser.
     SignIn {
         request: u64,
@@ -971,6 +976,10 @@ pub enum Event {
     LocalFiles {
         folder: std::path::PathBuf,
         uris: Arc<std::collections::HashMap<String, std::path::PathBuf>>,
+    },
+    LocalLibrary {
+        generation: u64,
+        result: Result<Arc<crate::local_files::Library>, String>,
     },
     ProxyRestored {
         config: ProxyConfig,
@@ -2260,6 +2269,24 @@ impl Worker {
                             folder,
                             uris: Arc::new(uris),
                         });
+                        waker.wake();
+                    });
+                }
+                Command::ScanLocalLibrary {
+                    folders,
+                    generation,
+                } => {
+                    let events = self.events.clone();
+                    let waker = self.waker.clone();
+                    tokio::spawn(async move {
+                        let result = tokio::task::spawn_blocking(move || {
+                            crate::local_files::scan(&folders).map(Arc::new)
+                        })
+                        .await
+                        .unwrap_or_else(|error| {
+                            Err(format!("Could not scan local files: {error}"))
+                        });
+                        let _ = events.send(Event::LocalLibrary { generation, result });
                         waker.wake();
                     });
                 }

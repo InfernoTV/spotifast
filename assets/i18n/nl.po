@@ -3708,6 +3708,67 @@ msgstr ""
 "stuurprogramma of zet GPU-versnelling aan voor de virtuele machine. {url} "
 "openen voor meer informatie?"
 
+#: src/ui/sidebar.rs:1097 src/ui/local_files.rs:17
+msgid "Local Files"
+msgstr "Lokale bestanden"
+
+#: src/app.rs:8953 src/app.rs:10958
+msgid "Choose this computer to play an available local file"
+msgstr "Kies deze computer om een beschikbaar lokaal bestand af te spelen"
+
+#: src/app.rs:10545
+msgid "Local files cannot be added to Spotify playlists"
+msgstr "Lokale bestanden kunnen niet aan Spotify-playlists worden toegevoegd"
+
+#: src/ui/settings.rs:340 src/ui/local_files.rs:26
+msgid ""
+"Index audio from a folder on this computer. Local files play on this "
+"computer only."
+msgstr ""
+"Indexeer audio uit een map op deze computer. Lokale bestanden worden alleen "
+"op deze computer afgespeeld."
+
+#: src/ui/settings.rs:1000 src/ui/local_files.rs:135
+msgid "Rescan"
+msgstr "Opnieuw scannen"
+
+#. Translators: {count} is a number of indexed audio files.
+#: src/ui/local_files.rs:47
+#, rust-format
+msgid "{count} local file"
+msgid_plural "{count} local files"
+msgstr[0] "{count} lokaal bestand"
+msgstr[1] "{count} lokale bestanden"
+
+#: src/ui/local_files.rs:63
+msgid "Supports MP3 and FLAC. Local files play on this computer only."
+msgstr ""
+"Ondersteunt MP3 en FLAC. Lokale bestanden worden alleen op deze computer "
+"afgespeeld."
+
+#: src/ui/local_files.rs:78
+msgid "Select This computer in the device picker to play local files."
+msgstr ""
+"Selecteer ‘Deze computer’ in de apparaatkiezer om lokale bestanden af te "
+"spelen."
+
+#: src/ui/local_files.rs:124
+msgid "Change folder"
+msgstr "Map wijzigen"
+
+#: src/ui/local_files.rs:164
+msgid "No local files found"
+msgstr "Geen lokale bestanden gevonden"
+
+#: src/ui/local_files.rs:167
+msgid "Subfolders are included. Rescan after changing files."
+msgstr ""
+"Submappen worden meegenomen. Scan opnieuw nadat je bestanden hebt gewijzigd."
+
+#: src/ui/winamp/mod.rs:906
+msgid "Size: 2x, 3x, 4x"
+msgstr "Grootte: 2x, 3x, 4x"
+
 #~ msgid ""
 #~ "Use a personal Development Mode app for a separate API quota. The shared "
 #~ "app stays active."

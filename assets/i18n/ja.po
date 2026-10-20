@@ -3676,6 +3676,67 @@ msgstr ""
 "するか、仮想マシンの GPU アクセラレーションを有効にしてください。詳しくは "
 "{url} を開きますか？"
 
+#: src/ui/sidebar.rs:1097 src/ui/local_files.rs:17
+msgid "Local Files"
+msgstr "ローカルファイル"
+
+#: src/app.rs:8953 src/app.rs:10958
+msgid "Choose this computer to play an available local file"
+msgstr ""
+"利用可能なローカルファイルを再生するには、このコンピューターを選んでください"
+
+#: src/app.rs:10545
+msgid "Local files cannot be added to Spotify playlists"
+msgstr "ローカルファイルはSpotifyのプレイリストに追加できません"
+
+#: src/ui/settings.rs:340 src/ui/local_files.rs:26
+msgid ""
+"Index audio from a folder on this computer. Local files play on this "
+"computer only."
+msgstr ""
+"このコンピューターのフォルダー内の音声ファイルを一覧に表示します。ローカル"
+"ファイルはこのコンピューターでのみ再生できます。"
+
+#: src/ui/settings.rs:1000 src/ui/local_files.rs:135
+msgid "Rescan"
+msgstr "再スキャン"
+
+#. Translators: {count} is a number of indexed audio files.
+#: src/ui/local_files.rs:47
+#, rust-format
+msgid "{count} local file"
+msgid_plural "{count} local files"
+msgstr[0] "{count} 個のローカルファイル"
+
+#: src/ui/local_files.rs:63
+msgid "Supports MP3 and FLAC. Local files play on this computer only."
+msgstr ""
+"MP3とFLACに対応しています。ローカルファイルはこのコンピューターでのみ再生でき"
+"ます。"
+
+#: src/ui/local_files.rs:78
+msgid "Select This computer in the device picker to play local files."
+msgstr ""
+"ローカルファイルを再生するには、デバイス選択で「このコンピューター」を選んで"
+"ください。"
+
+#: src/ui/local_files.rs:124
+msgid "Change folder"
+msgstr "フォルダーを変更"
+
+#: src/ui/local_files.rs:164
+msgid "No local files found"
+msgstr "ローカルファイルが見つかりません"
+
+#: src/ui/local_files.rs:167
+msgid "Subfolders are included. Rescan after changing files."
+msgstr ""
+"サブフォルダーも含まれます。ファイルを変更したら再スキャンしてください。"
+
+#: src/ui/winamp/mod.rs:906
+msgid "Size: 2x, 3x, 4x"
+msgstr "サイズ：2x、3x、4x"
+
 #~ msgid ""
 #~ "Use a personal Development Mode app for a separate API quota. The shared "
 #~ "app stays active."
