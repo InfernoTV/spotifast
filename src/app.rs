@@ -2563,16 +2563,7 @@ impl App {
                         }
                         Err(error) => {
                             self.local_files_error = Some(error.clone());
-                            if self.queued_play.as_ref().is_some_and(|request| {
-                                request
-                                    .uris
-                                    .iter()
-                                    .chain(request.offset_uri.iter())
-                                    .chain(request.context_uri.iter())
-                                    .any(|uri| uri.starts_with(LOCAL_URI_PREFIX))
-                            }) {
-                                self.queued_play = None;
-                            }
+                            self.cancel_queued_local_play();
                             if self.local_library.get().is_none() {
                                 self.local_library = Loadable::Failed(error);
                             }
@@ -9191,11 +9182,11 @@ impl App {
     /// in one ordered exchange: two independent requests race, and shuffle
     /// sometimes lost.
     fn play_request(&mut self, request: PlayRequest, shuffle_first: bool) {
+        // A new choice outranks a search even when playback must wait.
+        self.supersede_play_search();
         if !self.local_play_request_allowed(&request, shuffle_first) {
             return;
         }
-        // Whatever starts now outranks a play-search still in flight.
-        self.supersede_play_search();
         // A play from a row names its row again after this.
         self.played_row = None;
         self.start_play(request, shuffle_first);
@@ -9228,7 +9219,6 @@ impl App {
                 .chain(request.context_uri.iter())
                 .any(|uri| uri.starts_with(LOCAL_URI_PREFIX) && !self.local_file_available(uri))
         {
-            self.supersede_play_search();
             self.shuffle_wanted |= shuffle_first;
             self.queued_play = Some(request.clone());
             return false;
@@ -10755,6 +10745,7 @@ impl App {
         if folders.is_empty() {
             self.local_files = None;
             self.local_library = Loadable::Loaded(Arc::new(Vec::new()));
+            self.cancel_queued_local_play();
             return;
         }
         if self.local_library.get().is_none() {
@@ -10764,6 +10755,20 @@ impl App {
             folders,
             generation: self.local_files_generation,
         });
+    }
+
+    /// A removed or unreadable source cancels only playback that needs local files.
+    fn cancel_queued_local_play(&mut self) {
+        if self.queued_play.as_ref().is_some_and(|request| {
+            request
+                .uris
+                .iter()
+                .chain(request.offset_uri.iter())
+                .chain(request.context_uri.iter())
+                .any(|uri| uri.starts_with(LOCAL_URI_PREFIX))
+        }) {
+            self.queued_play = None;
+        }
     }
 
     /// Finds local display metadata after normalizing the URI as the player does.
@@ -28587,6 +28592,64 @@ mod tests {
         let commands = app.backend.take_player_commands();
         assert!(matches!(commands.as_slice(), [PlayerCommand::Load(load)]
             if load.uris == [item.uri()] && load.position_ms == 371));
+    }
+
+    /// Engine readiness during a scan cannot cancel a search asked for later.
+    #[test]
+    fn a_redeferred_local_play_preserves_a_newer_search() {
+        let (mut app, item) = indexed_local_app();
+        app.local_files = None;
+        app.local_files_scanning = true;
+        app.play_request(PlayRequest::tracks(vec![item.uri().into()]), false);
+        let ctx = egui::Context::default();
+        app.apply(
+            Action::PlaySearch {
+                kind: "track".into(),
+                query: "newer".into(),
+            },
+            &ctx,
+        );
+        let serial = app.play_search_serial;
+        app.handle_playback(LocalPlayback::Ready {
+            device_id: "this-computer".into(),
+        });
+        assert!(app.queued_play.is_some());
+        assert_eq!(app.play_search_serial, serial);
+        app.apply(
+            Action::PlaySearchMatch {
+                uri: "spotify:track:newer".into(),
+                serial,
+            },
+            &ctx,
+        );
+        assert_eq!(
+            app.assumed_context
+                .as_ref()
+                .map(|context| context.uri.as_str()),
+            Some("spotify:track:newer")
+        );
+    }
+
+    /// Forgetting a source removes deferred local requests in every URI field,
+    /// while preserving a cloud request waiting for the engine.
+    #[test]
+    fn removing_a_source_cancels_only_queued_local_play() {
+        for field in 0..4 {
+            let (mut app, item) = indexed_local_app();
+            app.local_files_scanning = true;
+            let mut request = PlayRequest::context("spotify:album:cloud");
+            match field {
+                0 => request.uris.push(item.uri().into()),
+                1 => request.offset_uri = Some(item.uri().into()),
+                2 => request.context_uri = Some(item.uri().into()),
+                _ => {}
+            }
+            app.queued_play = Some(request);
+            app.apply(Action::ForgetLocalFilesFolder, &egui::Context::default());
+            assert_eq!(app.queued_play.is_some(), field == 3);
+            assert!(!app.local_files_scanning);
+            assert!(app.toasts.is_empty());
+        }
     }
 
     /// A failed scan cancels deferred playback rather than starting stale audio.

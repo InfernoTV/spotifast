@@ -229,12 +229,14 @@ playlists from Spotifast. Playback still requires Spotify Premium and
 **Set up playback here** in the device menu.
 
 Supported playback is **MP3 and FLAC from 8 to 384 kHz**, including mono
-and surround files, which librespot converts to stereo. The scanner may
-find MP4 and M4P files, but their usual AAC audio is not enabled in this build.
+and surround files, which librespot converts to stereo. MP4 and M4P files
+with AAC audio are not enabled in this build.
 Files the playback decoder cannot open are omitted from the list.
-WebM and video files are unsupported. The list uses the same metadata lookup
+WebM and video files are unsupported. The list uses the same URI metadata
 as librespot playback, so songs with identical artist, album, title and
-length appear once. Files stay on your computer.
+length appear once. Nested symbolic links are skipped. An unreadable subfolder
+fails the scan and keeps the previous list instead of publishing partial results.
+Files stay on your computer.
 
 Choose **Rescan** after adding files or changing their tags. Folder changes
 and Rescan restart playback on this computer so the player's file lookup
