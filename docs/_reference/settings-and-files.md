@@ -333,7 +333,7 @@ one folder to scan, including its subfolders. The Library's **Local Files** page
 appears automatically when a folder is configured. Choosing another folder
 replaces it; **Remove** clears the folder and hides the Library entry without deleting
 files. The existing `local_files_folder` field in `settings.json` stores the
-path. The index is rebuilt in memory, using the same metadata lookup as
+path. The index is rebuilt in memory, using the same URI metadata as
 librespot playback. No audio files are copied or uploaded.
 
 **Rescan** refreshes the index after files or tags change. Changing the folder

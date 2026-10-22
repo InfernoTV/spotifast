@@ -1,9 +1,7 @@
-//! A view of the files librespot can resolve on this computer.
-//!
-//! Keep discovery and playback on the same lookup: a separate tag reader
-//! could produce a URI that the player cannot match back to its file.
+//! Local library indexing with the same URI metadata as librespot playback.
+//! Directory traversal is iterative, skips links, and fails on incomplete reads.
 
-use std::collections::{HashMap, hash_map::Entry};
+use std::collections::{HashMap, HashSet, hash_map::Entry};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -20,56 +18,141 @@ pub struct Library {
 
 /// Read the configured sources. This reads tags and must run off the UI thread.
 pub fn scan(folders: &[PathBuf]) -> Result<Library, String> {
-    for folder in folders {
-        std::fs::read_dir(folder).map_err(|error| {
+    let mut entries = Vec::new();
+    for path in audio_files(folders, |folder| std::fs::read_dir(folder))? {
+        if let Some(uri) = audio_uri(&path)? {
+            entries.push((uri, path));
+        }
+    }
+    Ok(library(
+        entries.iter().map(|(uri, path)| (uri, path.as_path())),
+    ))
+}
+
+/// Collect complete directory contents without following nested links or recursing.
+/// The reader argument lets tests reproduce an unreadable child on every platform.
+fn audio_files(
+    folders: &[PathBuf],
+    mut read_directory: impl FnMut(&Path) -> std::io::Result<std::fs::ReadDir>,
+) -> Result<Vec<PathBuf>, String> {
+    let mut pending = folders.to_vec();
+    let mut visited = HashSet::new();
+    let mut files = Vec::new();
+    while let Some(folder) = pending.pop() {
+        let fail = |error| {
             format!(
                 "Cannot read local files folder {}: {error}",
                 folder.display()
             )
-        })?;
+        };
+        let canonical = std::fs::canonicalize(&folder).map_err(fail)?;
+        if !visited.insert(canonical) {
+            continue;
+        }
+        for entry in read_directory(&folder).map_err(fail)? {
+            let entry = entry.map_err(fail)?;
+            let kind = entry.file_type().map_err(fail)?;
+            if kind.is_symlink() {
+                continue;
+            }
+            let path = entry.path();
+            if kind.is_dir() {
+                pending.push(path);
+            } else if kind.is_file()
+                && path.extension().is_some_and(|extension| {
+                    extension.eq_ignore_ascii_case("mp3") || extension.eq_ignore_ascii_case("flac")
+                })
+            {
+                files.push(path);
+            }
+        }
     }
-    let lookup = librespot_playback::local_file::create_local_file_lookup(folders);
-    Ok(library(
-        lookup.iter().filter(|(_, path)| playable_file(path)),
-    ))
+    files.sort();
+    Ok(files)
 }
 
-/// Check the playback decoder's codec, sample-rate and channel requirements
-/// before offering a file in the library.
-fn playable_file(path: &Path) -> bool {
-    use symphonia::core::{codecs::DecoderOptions, io::MediaSourceStream, probe::Hint};
-
-    let Ok(file) = std::fs::File::open(path) else {
-        return false;
+/// Probe once for both playable format and URI tags. Container metadata takes
+/// precedence over probe metadata, matching the approved librespot lookup.
+fn audio_uri(path: &Path) -> Result<Option<SpotifyUri>, String> {
+    use symphonia::core::{
+        codecs::DecoderOptions, io::MediaSourceStream, meta::StandardTagKey, probe::Hint,
     };
+
+    let file = std::fs::File::open(path)
+        .map_err(|error| format!("Cannot read local file {}: {error}", path.display()))?;
     let source = MediaSourceStream::new(Box::new(file), Default::default());
     let mut hint = Hint::new();
     if let Some(extension) = path.extension().and_then(|extension| extension.to_str()) {
         hint.with_extension(extension);
     }
-    let Ok(probed) = symphonia::default::get_probe().format(
+    let Ok(mut probed) = symphonia::default::get_probe().format(
         &hint,
         source,
         &Default::default(),
         &Default::default(),
     ) else {
-        return false;
+        return Ok(None);
     };
     let Some(track) = probed.format.default_track() else {
-        return false;
+        return Ok(None);
     };
     let Ok(decoder) =
         symphonia::default::get_codecs().make(&track.codec_params, &DecoderOptions::default())
     else {
-        return false;
+        return Ok(None);
     };
     let params = decoder.codec_params();
     // Match the pinned player's format limits without constructing a resampling
     // filter for every file during indexing. Playback constructs that on demand.
-    params
+    let playable = params
         .sample_rate
         .is_some_and(|rate| (8000..=384000).contains(&rate))
-        && params.channels.is_some_and(|channels| channels.count() > 0)
+        && params.channels.is_some_and(|channels| channels.count() > 0);
+    if !playable {
+        return Ok(None);
+    }
+    let Some((time_base, frames)) = track
+        .codec_params
+        .time_base
+        .zip(track.codec_params.n_frames)
+    else {
+        return Ok(None);
+    };
+    let duration = std::time::Duration::from_secs(time_base.calc_time(frames).seconds);
+    let mut metadata = probed.format.metadata();
+    if metadata.current().is_none()
+        && let Some(probe_metadata) = probed.metadata.get()
+    {
+        metadata = probe_metadata;
+    }
+    let Some(revision) = metadata.skip_to_latest() else {
+        return Ok(None);
+    };
+    let component = |key| {
+        let value = revision
+            .tags()
+            .iter()
+            .rev()
+            .find(|tag| tag.std_key == Some(key))
+            .map(|tag| tag.value.to_string())
+            .unwrap_or_default();
+        // Form encoding is part of librespot's local URI identity, including
+        // spaces as '+' and the four unescaped punctuation characters.
+        const ESCAPED: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERIC
+            .remove(b'*')
+            .remove(b'-')
+            .remove(b'.')
+            .remove(b'_');
+        percent_encoding::utf8_percent_encode(&value, ESCAPED)
+            .to_string()
+            .replace("%20", "+")
+    };
+    Ok(Some(SpotifyUri::Local {
+        artist: component(StandardTagKey::Artist),
+        album_title: component(StandardTagKey::Album),
+        track_title: component(StandardTagKey::TrackTitle),
+        duration,
+    }))
 }
 
 /// Deduplicate by playback URI and sort rows by title, artist and URI so
@@ -157,6 +240,106 @@ fn display_tag(tag: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A private source folder whose links and files are removed after the test.
+    struct Source(PathBuf);
+
+    impl Source {
+        /// Create an isolated source without reusing another test's directory.
+        fn new() -> Self {
+            let path = std::env::temp_dir().join(format!(
+                "spotifast-scan-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ));
+            std::fs::create_dir(&path).unwrap();
+            Self(path)
+        }
+    }
+
+    impl Drop for Source {
+        /// Remove this test's files and links without following those links.
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    /// An unreadable nested directory must not return a partial list of songs.
+    #[test]
+    fn a_nested_read_failure_rejects_the_entire_scan() {
+        let source = Source::new();
+        let child = source.0.join("unreadable");
+        std::fs::create_dir(&child).unwrap();
+        std::fs::write(source.0.join("song.mp3"), b"audio").unwrap();
+        let result = audio_files(std::slice::from_ref(&source.0), |path| {
+            if path == child {
+                Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied))
+            } else {
+                std::fs::read_dir(path)
+            }
+        });
+        assert!(result.unwrap_err().contains(&child.display().to_string()));
+    }
+
+    /// Indexing and the approved player must agree on every URI, including form
+    /// encoding of punctuation and non-ASCII tags.
+    #[test]
+    fn indexed_uris_match_the_approved_player() {
+        let source = Source::new();
+        let value = "Björk ~ *-_.+: recordings";
+        // Replace only the Vorbis comment block of the valid two-second FLAC.
+        let original = include_bytes!("testdata/local-files/stereo-44100.flac");
+        assert_eq!(original[42] & 0x7f, 4);
+        let old_length = u32::from_be_bytes([0, original[43], original[44], original[45]]) as usize;
+        let mut comments = [0u32.to_le_bytes(), 3u32.to_le_bytes()].concat();
+        for key in ["TITLE", "ARTIST", "ALBUM"] {
+            let tag = format!("{key}={value}");
+            comments.extend((tag.len() as u32).to_le_bytes());
+            comments.extend(tag.as_bytes());
+        }
+        let mut tagged = original[..43].to_vec();
+        tagged.extend(&(comments.len() as u32).to_be_bytes()[1..]);
+        tagged.extend(comments);
+        tagged.extend(&original[46 + old_length..]);
+        std::fs::write(source.0.join("tags.flac"), tagged).unwrap();
+        let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/testdata/local-files");
+        let folders = vec![source.0.clone(), fixtures];
+        let lookup = librespot_playback::local_file::create_local_file_lookup(&folders);
+        let mut checked = 0;
+        for (expected, path) in lookup.iter() {
+            assert_eq!(audio_uri(path).unwrap().as_ref(), Some(expected));
+            checked += 1;
+        }
+        assert_eq!(checked, 4);
+    }
+
+    /// A directory link to an ancestor cannot recurse or duplicate a song.
+    #[test]
+    fn directory_links_do_not_cycle() {
+        let source = Source::new();
+        let child = source.0.join("child");
+        std::fs::create_dir(&child).unwrap();
+        std::fs::write(child.join("song.mp3"), b"audio").unwrap();
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&source.0, child.join("ancestor")).unwrap();
+        #[cfg(windows)]
+        if let Err(error) = std::os::windows::fs::symlink_dir(&source.0, child.join("ancestor")) {
+            if error.kind() == std::io::ErrorKind::PermissionDenied {
+                return; // Windows requires Developer Mode or link privileges.
+            }
+            panic!("{error}");
+        }
+        assert_eq!(
+            audio_files(std::slice::from_ref(&source.0), |path| std::fs::read_dir(
+                path
+            ))
+            .unwrap(),
+            [child.join("song.mp3")]
+        );
+    }
 
     #[test]
     fn scans_real_tags_and_accepts_supported_channels() {
@@ -260,7 +443,7 @@ mod tests {
                 .as_nanos()
         ));
         std::fs::write(&path, b"This is not an MP3").unwrap();
-        assert!(!playable_file(&path));
+        assert!(audio_uri(&path).unwrap().is_none());
         std::fs::remove_file(path).unwrap();
     }
 }

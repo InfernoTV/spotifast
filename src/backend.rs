@@ -46,16 +46,13 @@ const AUDIOBOOK_BATCH: usize = 50;
 const RADIO_TIMEOUT: Duration = Duration::from_secs(20);
 
 /// The songs in `folder` and its subfolders by the `spotify:local:` URIs
-/// they play for, found exactly as the player finds them, so the songs a
+/// they play for, using the library's checked traversal and URI metadata, so the songs a
 /// playlist lists that will play are the ones shown as playable, and each
 /// one's file can be read for its cover and lyrics.
 fn local_file_uris(
     folder: &std::path::Path,
-) -> std::collections::HashMap<String, std::path::PathBuf> {
-    librespot_playback::local_file::create_local_file_lookup(&[folder.to_path_buf()])
-        .iter()
-        .map(|(uri, path)| (uri.to_uri(), path.to_path_buf()))
-        .collect()
+) -> Result<std::collections::HashMap<String, std::path::PathBuf>, String> {
+    crate::local_files::scan(&[folder.to_path_buf()]).map(|library| (*library.uris).clone())
 }
 /// Newest episodes read from each saved podcast for Home's podcast shelf.
 const HOME_EPISODES_PER_SHOW: u32 = 5;
@@ -2198,7 +2195,7 @@ impl Worker {
                     let waker = self.waker.clone();
                     tokio::spawn(async move {
                         let scanned = folder.clone();
-                        let Ok(uris) =
+                        let Ok(Ok(uris)) =
                             tokio::task::spawn_blocking(move || local_file_uris(&scanned)).await
                         else {
                             return;
