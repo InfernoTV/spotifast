@@ -20,7 +20,9 @@ check every one of them.
 
 The Library's **Local Files** page plays the indexed songs in its displayed
 order. Local-file **Add to queue** and **Play next** mix them with Spotify songs
-in **Playing next** while this computer is the active player.
+in **Playing next** while this computer is the active player, including when
+paused. An available local file follows the same queue rules whether it comes
+from this page or a playlist; remote-device selections queue only Spotify songs.
 Local files only play on this computer;
 they cannot be sent to another Connect device or added to a Spotify playlist
 from Spotifast. Playback still needs Spotify Premium and playback on this

@@ -2479,10 +2479,10 @@ impl App {
 
     fn handle_backend_events(&mut self, events: Vec<Event>) {
         for event in events {
-            // Offline, as in demo mode, only colours read from cover art and
-            // local update checks come through.
+            // Offline, as in demo mode, disk scans, cover colours and local
+            // update checks still finish; Spotify responses stay blocked.
             if self.offline
-                && !matches!(&event, Event::Accent { .. })
+                && !matches!(&event, Event::Accent { .. } | Event::LocalLibrary { .. })
                 && (self.update_source.is_github()
                     || !matches!(
                         &event,
@@ -26942,6 +26942,52 @@ mod tests {
         assert!(app.settings.local_files_folders().is_empty());
         assert!(app.local_files.is_none());
         assert!(matches!(app.actions.as_slice(), [Action::RestartEngine]));
+    }
+
+    /// Offline rescans deliver both success and failure through the real worker
+    /// and event filter, while unrelated network responses remain suppressed.
+    #[test]
+    fn offline_local_rescans_finish_with_success_or_error() {
+        let fixtures = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/testdata/local-files");
+        for succeeds in [true, false] {
+            let (mut app, previous) = indexed_local_app();
+            app.offline = true;
+            app.network_reachable = false;
+            let folder = if succeeds {
+                fixtures.clone()
+            } else {
+                fixtures.join("missing-source")
+            };
+            app.settings.local_files_folder = Some(folder.to_string_lossy().into_owned());
+            app.apply(Action::RescanLocalFiles, &egui::Context::default());
+            assert!(app.local_files_scanning);
+            let deadline = Instant::now() + Duration::from_secs(5);
+            while app.local_files_scanning && Instant::now() < deadline {
+                app.handle_events();
+                std::thread::sleep(Duration::from_millis(1));
+            }
+            assert!(
+                !app.local_files_scanning,
+                "offline rescan must deliver its result"
+            );
+            if succeeds {
+                assert_eq!(app.local_library.get().unwrap().len(), 3);
+                assert!(app.local_files_error.is_none());
+            } else {
+                assert!(
+                    app.local_files_error
+                        .as_ref()
+                        .unwrap()
+                        .contains("missing-source")
+                );
+                assert_eq!(app.local_library.get().unwrap()[0].uri(), previous.uri());
+            }
+            app.handle_backend_events(vec![Event::Error("Spotify response while offline".into())]);
+            assert!(
+                app.toasts.is_empty(),
+                "network responses remain blocked offline"
+            );
+        }
     }
 
     /// A paused local player with one indexed recording and no network writes.

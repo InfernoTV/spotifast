@@ -1271,8 +1271,8 @@ impl Backend {
         &self.activity
     }
 
-    /// Stops Spotify-bound commands from leaving the process; artwork and
-    /// shutdown still work. Used by the demo mode and by headless tests.
+    /// Stops Spotify-bound commands from leaving the process; local scans,
+    /// artwork and shutdown still work. Used by demo mode and headless tests.
     #[cfg_attr(not(any(test, feature = "demo")), allow(dead_code))]
     pub fn set_offline(&mut self, offline: bool) {
         self.offline = offline;
@@ -1309,6 +1309,7 @@ impl Backend {
                     | Command::InspectUpdate
                     | Command::DownloadUpdate { .. }
                     | Command::InstallUpdate { .. }
+                    | Command::ScanLocalLibrary { .. }
             )
         {
             return;
