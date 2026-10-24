@@ -2529,6 +2529,7 @@ impl App {
                                 .map(|folder| (folder.clone(), Arc::clone(&library.uris)));
                             self.local_library = Loadable::Loaded(Arc::clone(&library.tracks));
                             self.local_files_error = None;
+                            self.cancel_queued_local_play();
                             self.replay_queued_play();
                         }
                         Err(error) => {
@@ -10382,7 +10383,8 @@ impl App {
         });
     }
 
-    /// A removed or unreadable source cancels only playback that needs local files.
+    /// Cancel a waiting local request only when its files are absent from the
+    /// index. A failed rescan can retain both the old index and its waiting play.
     fn cancel_queued_local_play(&mut self) {
         if self.queued_play.as_ref().is_some_and(|request| {
             request
@@ -10390,9 +10392,12 @@ impl App {
                 .iter()
                 .chain(request.offset_uri.iter())
                 .chain(request.context_uri.iter())
-                .any(|uri| uri.starts_with(LOCAL_URI_PREFIX))
+                .any(|uri| uri.starts_with(LOCAL_URI_PREFIX) && !self.local_file_available(uri))
         }) {
             self.queued_play = None;
+            self.queue_start_pending = None;
+            self.clear_play_pending();
+            self.intent_track = None;
         }
     }
 
@@ -27690,6 +27695,72 @@ mod tests {
             app.apply(Action::ForgetLocalFilesFolder, &egui::Context::default());
             assert_eq!(app.queued_play.is_some(), field == 3);
             assert!(!app.local_files_scanning);
+            assert!(app.toasts.is_empty());
+        }
+    }
+
+    /// A failed rescan preserves an indexed request and its position until the
+    /// disconnected engine is ready to play it.
+    #[test]
+    fn a_failed_rescan_keeps_an_indexed_play_waiting_for_reconnect() {
+        let (mut app, item) = indexed_local_app();
+        app.local.connected = false;
+        let mut request = PlayRequest::tracks(vec![item.uri().into()]);
+        request.position_ms = 371;
+        app.play_request(request, false);
+        assert!(app.queued_play.is_some());
+        assert!(app.any_play_pending());
+        app.handle_backend_events(vec![Event::LocalLibrary {
+            generation: app.local_files_generation,
+            result: Err("Drive temporarily unavailable".into()),
+        }]);
+        assert!(app.local_file_available(item.uri()));
+        assert!(app.queued_play.is_some());
+        assert!(app.any_play_pending());
+        assert_eq!(app.queue_start_pending, Some(Target::Local));
+        assert_eq!(app.intent_track.as_ref().unwrap().uri, item.uri());
+        assert!(app.backend.take_player_commands().is_empty());
+        app.local.connected = true;
+        app.handle_playback(LocalPlayback::Ready {
+            device_id: "this-computer".into(),
+        });
+        assert!(app.queued_play.is_none());
+        assert!(matches!(app.backend.take_player_commands().as_slice(),
+            [PlayerCommand::Load(load)] if load.uris == [item.uri()] && load.position_ms == 371));
+    }
+
+    /// Removing a source or finishing a scan without the requested file clears
+    /// all pending playback state and cannot replay the cancelled song later.
+    #[test]
+    fn cancelling_an_unavailable_local_play_clears_pending_state() {
+        for remove_source in [true, false] {
+            let (mut app, item) = indexed_local_app();
+            app.local.connected = false;
+            app.play_request(PlayRequest::tracks(vec![item.uri().into()]), false);
+            assert!(app.queued_play.is_some());
+            assert!(app.any_play_pending());
+            assert!(app.queue_start_pending.is_some());
+            assert!(app.intent_track.is_some());
+            if remove_source {
+                app.apply(Action::ForgetLocalFilesFolder, &egui::Context::default());
+            } else {
+                app.handle_backend_events(vec![Event::LocalLibrary {
+                    generation: app.local_files_generation,
+                    result: Ok(Arc::new(crate::local_files::Library::default())),
+                }]);
+            }
+            assert!(!app.local_file_available(item.uri()));
+            assert!(app.queued_play.is_none());
+            assert!(app.queue_start_pending.is_none());
+            assert!(app.pending_play_keys.is_empty());
+            assert!(app.pending_play_at.is_none());
+            assert!(app.intent_track.is_none());
+            assert!(!app.any_play_pending());
+            app.local.connected = true;
+            app.handle_playback(LocalPlayback::Ready {
+                device_id: "this-computer".into(),
+            });
+            assert!(app.backend.take_player_commands().is_empty());
             assert!(app.toasts.is_empty());
         }
     }
