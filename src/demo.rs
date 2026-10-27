@@ -1326,7 +1326,14 @@ pub fn apply_flags(app: &mut App, page: Option<&str>, show: Option<&str>) {
                 );
                 app.local_files = Some(("/home/you/Music".into(), std::sync::Arc::new(uris)));
             }
-            "local-library" | "local-library-offline" => {
+            "local-library"
+            | "local-library-offline"
+            | "local-library-filtered"
+            | "local-library-sorted"
+            | "local-library-empty"
+            | "local-library-scanning"
+            | "local-library-error"
+            | "local-library-choose-folder" => {
                 play_here(app);
                 app.local.playback = crate::player::Playback::Paused;
                 let items: Vec<_> = ["Kitchen Demo", "Evening Rehearsal", "Field Recording"]
@@ -1367,6 +1374,41 @@ pub fn apply_flags(app: &mut App, page: Option<&str>, show: Option<&str>) {
                 app.local_files_scanning = false;
                 app.local_files_error = None;
                 app.local_files_revision = app.local_files_revision.wrapping_add(1);
+                app.demo_local_files_filter = None;
+                app.table_sorts.remove(&Page::LocalFiles);
+                match surface {
+                    "local-library-filtered" => {
+                        app.demo_local_files_filter = Some("Kitchen".into())
+                    }
+                    "local-library-sorted" => {
+                        app.table_sorts.insert(
+                            Page::LocalFiles,
+                            crate::model::TableSort {
+                                column: crate::model::SortColumn::Title,
+                                ascending: true,
+                            },
+                        );
+                    }
+                    "local-library-empty" => {
+                        app.local_library = Loadable::Loaded(std::sync::Arc::new(Vec::new()));
+                        if let Some((_, files)) = &mut app.local_files {
+                            *files = Default::default();
+                        }
+                    }
+                    "local-library-scanning" => {
+                        app.local_library = Loadable::Loading;
+                        app.local_files_scanning = true;
+                    }
+                    "local-library-error" => {
+                        app.local_files_error =
+                            Some("The selected folder could not be read".into());
+                    }
+                    "local-library-choose-folder" => {
+                        app.settings.local_files_folder = None;
+                        app.local_files = None;
+                    }
+                    _ => {}
+                }
                 if surface == "local-library-offline" {
                     app.network_reachable = false;
                 }

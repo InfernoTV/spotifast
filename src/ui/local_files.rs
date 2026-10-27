@@ -83,6 +83,10 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     }
 
     let filter_id = ui.make_persistent_id("local-files-filter");
+    #[cfg(any(test, feature = "demo"))]
+    if let Some(filter) = app.demo_local_files_filter.take() {
+        ui.data_mut(|data| data.insert_temp(filter_id, filter));
+    }
     let mut filter = ui
         .data(|data| data.get_temp::<String>(filter_id))
         .unwrap_or_default();

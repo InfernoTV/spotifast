@@ -421,6 +421,9 @@ pub struct App {
     pub taskbar_hiding_supported: bool,
     #[cfg(any(test, feature = "demo"))]
     pub demo_windows_controls: bool,
+    /// A one-time filter seed for deterministic Local Files demo captures.
+    #[cfg(any(test, feature = "demo"))]
+    pub demo_local_files_filter: Option<String>,
     applied_dark: Option<bool>,
     /// Reveals new colours from the middle of the window outwards.
     theme_transition: fastframe_theme::Transition,
@@ -1111,6 +1114,8 @@ impl App {
             taskbar_hiding_supported: cfg!(windows),
             #[cfg(any(test, feature = "demo"))]
             demo_windows_controls: false,
+            #[cfg(any(test, feature = "demo"))]
+            demo_local_files_filter: None,
             applied_dark: None,
             theme_transition: fastframe_theme::Transition::default(),
             reveal_theme_changes: true,

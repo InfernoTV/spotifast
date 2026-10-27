@@ -495,6 +495,12 @@ visible while replacing the page content, with unfinished controls disabled.
 `--demo-language <TAG>` shows the interface in one of the bundled languages,
 such as `es` or `ja`, in place of the saved setting and the system's language.
 
+For Local Files, `--demo-page local-files --demo-show local-library` supplies
+three indexed recordings. Use `local-library-filtered`, `local-library-sorted`,
+`local-library-empty`, `local-library-scanning`, `local-library-error`, or
+`local-library-choose-folder` instead for those interface states. Add `light`
+to capture light mode, and `--demo-size 760x800` for a narrow window.
+
 `--demo-shot <PATH>` writes the window to a PNG and exits, which is useful for
 making deterministic screenshots for these pages:
 
