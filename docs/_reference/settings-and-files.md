@@ -705,3 +705,8 @@ For a manual installation, remove only
 Packaged launches recreate missing integration files. To disable the hook
 while keeping the package installed, leave that hook file empty instead;
 existing user files are preserved. Selecting Dark or Light is sufficient to stop following Omarchy's colors.
+
+Local Ogg Opus indexing (`.opus`, case insensitive) is enabled only when the
+approved librespot playback engine can construct an Opus decoder. The current
+pinned engine does not enable Opus, so these files remain hidden until that
+upstream capability is carried and enabled. MP3 and FLAC are unchanged.

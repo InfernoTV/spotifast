@@ -60,7 +60,9 @@ fn audio_files(
                 pending.push(path);
             } else if kind.is_file()
                 && path.extension().is_some_and(|extension| {
-                    extension.eq_ignore_ascii_case("mp3") || extension.eq_ignore_ascii_case("flac")
+                    extension.eq_ignore_ascii_case("mp3")
+                        || extension.eq_ignore_ascii_case("flac")
+                        || extension.eq_ignore_ascii_case("opus")
                 })
             {
                 files.push(path);
@@ -96,18 +98,24 @@ fn audio_uri(path: &Path) -> Result<Option<SpotifyUri>, String> {
     let Some(track) = probed.format.default_track() else {
         return Ok(None);
     };
-    let Ok(decoder) =
+    // Opus is optional in librespot. Ask the actual playback decoder before
+    // exposing a row, so older or non-Opus engines never advertise a file they
+    // cannot play. The approved engine remains the source of this capability.
+    let playable = if track.codec_params.codec == symphonia::core::codecs::CODEC_TYPE_OPUS {
+        let file = std::fs::File::open(path)
+            .map_err(|error| format!("Cannot read local file {}: {error}", path.display()))?;
+        librespot_playback::decoder::SymphoniaDecoder::new(file, hint).is_ok()
+    } else if let Ok(decoder) =
         symphonia::default::get_codecs().make(&track.codec_params, &DecoderOptions::default())
-    else {
-        return Ok(None);
+    {
+        let params = decoder.codec_params();
+        params
+            .sample_rate
+            .is_some_and(|rate| (8000..=384000).contains(&rate))
+            && params.channels.is_some_and(|channels| channels.count() > 0)
+    } else {
+        false
     };
-    let params = decoder.codec_params();
-    // Match the pinned player's format limits without constructing a resampling
-    // filter for every file during indexing. Playback constructs that on demand.
-    let playable = params
-        .sample_rate
-        .is_some_and(|rate| (8000..=384000).contains(&rate))
-        && params.channels.is_some_and(|channels| channels.count() > 0);
     if !playable {
         return Ok(None);
     }
@@ -264,6 +272,30 @@ mod tests {
         /// Remove this test's files and links without following those links.
         fn drop(&mut self) {
             let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn opus_rows_require_a_playback_decoder() {
+        let source = Source::new();
+        let path = source.0.join("stereo.OPUS");
+        std::fs::write(
+            &path,
+            include_bytes!("testdata/local-files/stereo-48000.opus"),
+        )
+        .unwrap();
+        let mut hint = symphonia::core::probe::Hint::new();
+        hint.with_extension("opus");
+        let supported = librespot_playback::decoder::SymphoniaDecoder::new(
+            std::fs::File::open(&path).unwrap(),
+            hint,
+        )
+        .is_ok();
+        let library = scan(std::slice::from_ref(&source.0)).unwrap();
+        assert_eq!(library.tracks.len(), usize::from(supported));
+        if supported {
+            assert_eq!(library.tracks[0].name(), "Opus Test");
+            assert!(library.uris.values().any(|p| p == &path));
         }
     }
 
